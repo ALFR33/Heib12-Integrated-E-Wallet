@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>محفظة Heib12 الإلكترونية المتكاملة</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 500: '#22c55e', 600: '#16a34a' }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3 space-x-reverse">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-green-500 to-emerald-400 flex items-center justify-center text-slate-950 font-bold text-xl shadow-lg shadow-green-500/20">
+                    H
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-white tracking-wide">Heib12 <span class="text-green-400 text-xs px-2 py-0.5 rounded-full bg-green-500/10 border border-green-500/20">Wallet</span></h1>
+                    <p class="text-xs text-slate-400">بوابة الدفع والأرباح الرقمية</p>
+                </div>
+            </div>
+            <div id="auth-header-actions" class="flex items-center space-x-3 space-x-reverse">
+                <!-- Dynamic Auth Buttons -->
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Dynamic Container -->
+    <main class="flex-grow max-w-7xl mx-auto w-full px-4 py-8">
+        
+        <!-- 1. AUTH SCREEN (Login / Register) -->
+        <div id="screen-auth" class="max-w-md mx-auto bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl my-12">
+            <div class="text-center mb-8">
+                <h2 id="auth-title" class="text-2xl font-bold text-white">تسجيل الدخول إلى محفظتك</h2>
+                <p class="text-xs text-slate-400 mt-1">أدخل بياناتك لإدارة أموالك وأرباحك بمان</p>
+            </div>
+
+            <form id="auth-form" onsubmit="handleAuth(event)" class="space-y-4">
+                <div id="name-field-container" class="hidden">
+                    <label class="block text-xs font-medium text-slate-300 mb-1.5">الاسم الكامل</label>
+                    <input type="text" id="auth-name" placeholder="اسم المستخدم" class="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-white text-sm focus:outline-none focus:border-green-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1.5">البريد الإلكتروني</label>
+                    <input type="email5" id="auth-email" placeholder="name@example.com" required class="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-white text-sm focus:outline-none focus:border-green-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1.5">كلمة المرور</label>
+                    <input type="password" id="auth-password" placeholder="••••••••" required class="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-white text-sm focus:outline-none focus:border-green-500">
+                </div>
+                <button type="submit" id="auth-submit-btn" class="w-full bg-green-500 hover:bg-green-600 text-slate-950 font-bold py-3.5 rounded-xl transition shadow-lg shadow-green-500/20 text-sm">دخول</button>
+            </form>
+
+            <div class="mt-6 text-center">
+                <button onclick="toggleAuthMode()" id="auth-switch-btn" class="text-xs text-slate-400 hover:text-green-400 transition">ليس لديك حساب؟ سجل الآن</button>
+            </div>
+            
+            <!-- Quick Admin Login Hint -->
+            <div class="mt-8 pt-4 border-t border-slate-800 text-center">
+                <p class="text-[11px] text-slate-500">للدخول كمسؤول (Admin): استخدم البريد <span class="text-slate-300 font-mono">admin@heib12.com</span></p>
+            </div>
+        </div>
+
+        <!-- 2. USER DASHBOARD SCREEN -->
+        <div id="screen-user" class="hidden grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Balance Card -->
+                <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800 p-6 md:p-8 shadow-2xl">
+                    <div class="flex justify-between items-start mb-6">
+                        <div>
+                            <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">رصيدك المتاح</p>
+                            <h2 id="user-balance" class="text-4xl md:text-5xl font-extrabold text-white mt-2 tracking-tight">$0.00</h2>
+                        </div>
+                        <button onclick="openDepositModal()" class="bg-green-500 hover:bg-green-600 text-slate-950 font-bold px-4 py-2.5 rounded-xl transition shadow-lg shadow-green-500/20 flex items-center gap-2 text-sm">
+                            <i class="fa-solid fa-plus"></i> إيداع رصيد تجريبي
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Withdraw / Payout Section (User enters their own PayPal) -->
+                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-xl">
+                    <div class="flex items-center gap-3 mb-6">
+                        <div class="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                            <i class="fa-brands fa-paypal text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-white text-lg">طلب سحب الأرباح إلى PayPal</h3>
+                            <p class="text-xs text-slate-400">أدخل بريدك الإلكتروني المرخص في بايبال</p>
+                        </div>
+                    </div>
+
+                    <form onsubmit="handleWithdraw(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1.5">بريد PayPal الخاص بك</label>
+                            <input type="email" id="user-paypal-email" placeholder="your-paypal@email.com" required
+                                class="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-white text-sm focus:outline-none focus:border-green-500 transition font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1.5">المبلغ المراد سحبه ($)</label>
+                            <input type="number" id="withdraw-amount" placeholder="0.00" min="5" step="0.01" required
+                                class="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-white text-sm focus:outline-none focus:border-green-500 transition">
+                        </div>
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 rounded-xl transition shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2 text-sm">
+                            <i class="fa-solid fa-paper-plane"></i> إرسال طلب السحب
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Transactions History -->
+            <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl h-full flex flex-col">
+                <h3 class="font-bold text-white text-base mb-6">سجل المعاملات</h3>
+                <div id="user-transactions" class="space-y-3 overflow-y-auto max-h-[450px] pr-1">
+                    <!-- Populated via JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. ADMIN DASHBOARD SCREEN (For You - Salh) -->
+        <div id="screen-admin" class="hidden space-y-6">
+            <div class="bg-slate-900 border border-amber-500/30 rounded-3xl p-6 md:p-8 shadow-xl">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <span class="text-xs bg-amber-500/10 text-amber-400 px-3 py-1 rounded-full border border-amber-500/20">لوحة الإدارة العليا</span>
+                        <h2 class="text-2xl font-bold text-white mt-2">طلبات السحب المعلقة من المستخدمين</h2>
+                    </div>
+                    <span class="text-xs text-slate-400">إجمالي الإيميلات وطلبات الدفع</span>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-right text-sm">
+                        <thead class="bg-slate-950 text-slate-400 uppercase text-xs border-b border-slate-800">
+                            <tr>
+                                <th class="p-3">المستخدم</th>
+                                <th class="p-3">إيميل PayPal الخاص بالمستخدم</th>
+                                <th class="p-3">المبلغ المطلوب</th>
+                                <th class="p-3">الحالة</th>
+                                <th class="p-3">إجراء</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-payouts-list" class="divide-y divide-slate-800">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Deposit Modal -->
+    <div id="deposit-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl">
+            <h3 class="text-lg font-bold text-white mb-4">محاكاة إيداع رصيد</h3>
+            <input type="number" id="deposit-amount" placeholder="أدخل المبلغ ($)" class="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-white text-sm focus:outline-none focus:border-green-500 mb-4">
+            <div class="flex gap-3">
+                <button onclick="closeDepositModal()" class="flex-1 bg-slate-800 text-white font-medium py-2.5 rounded-xl text-sm">إلغاء</button>
+                <button onclick="confirmDeposit()" class="flex-1 bg-green-500 text-slate-950 font-bold py-2.5 rounded-xl text-sm">إيداع</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script Logic -->
+    <script>
+        let isRegisterMode = false;
+        let currentUser = null;
+
+        // Load DB from localStorage
+        function getDB() {
+            return JSON.parse(localStorage.getItem('heib12_db')) || { users: [], payouts: [] };
+        }
+        function saveDB(db) {
+            localStorage.setItem('heib12_db', JSON.stringify(db));
+        }
+
+        // Initialize Admin account if not exists
+        function initSystem() {
+            let db = getDB();
+            if (!db.users.find(u => u.email === 'admin@heib12.com')) {
+                db.users.push({ name: 'المسؤول (صالح)', email: 'admin@heib12.com', password: 'admin', balance: 5000, transactions: [], isAdmin: true });
+                saveDB(db);
+            }
+        }
+        initSystem();
+
+        function toggleAuthMode() {
+            isRegisterMode = !isRegisterMode;
+            document.getElementById('auth-title').textContent = isRegisterMode ? 'إنشاء حساب جديد في Heib12' : 'تسجيل الدخول إلى محفظتك';
+            document.getElementById('auth-submit-btn').textContent = isRegisterMode ? 'إنشاء الحساب' : 'دخول';
+            document.getElementById('auth-switch-btn').textContent = isRegisterMode ? 'لديك حساب بالفعل؟ سجل دخولك' : 'ليس لديك حساب؟ سجل الآن';
+            document.getElementById('name-field-container').classList.toggle('hidden', !isRegisterMode);
+        }
+
+        function handleAuth(event) {
+            event.preventDefault();
+            const email = document.getElementById('auth-email').value.trim();
+            const password = document.getElementById('auth-password').value;
+            const name = document.getElementById('auth-name').value.trim();
+            let db = getDB();
+
+            if (isRegisterMode) {
+                if (db.users.find(u => u.email === email)) {
+                    alert('البريد الإلكتروني مسجل مسبقاً!');
+                    return;
+                }
+                const newUser = { name: name || 'مستخدم جديد', email, password, balance: 100.00, transactions: [{ title: 'مكافأة تسجيل حساب جديد', amount: 100, type: 'in', date: 'الآن' }], isAdmin: false };
+                db.users.push(newUser);
+                saveDB(db);
+                currentUser = newUser;
+            } else {
+                const user = db.users.find(u => u.email === email && u.password === password);
+                if (!user) {
+                    alert('خطأ في البريد الإلكتروني أو كلمة المرور!');
+                    return;
+                }
+                currentUser = user;
+            }
+
+            renderApp();
+        }
+
+        function logout() {
+            currentUser = null;
+            renderApp();
+        }
+
+        function renderApp() {
+            const authScreen = document.getElementById('screen-auth');
+            const userScreen = document.getElementById('screen-user');
+            const adminScreen = document.getElementById('screen-admin');
+            const headerActions = document.getElementById('auth-header-actions');
+
+            authScreen.classList.add('hidden');
+            userScreen.classList.add('hidden');
+            adminScreen.classList.add('hidden');
+            headerActions.innerHTML = '';
+
+            if (!currentUser) {
+                authScreen.classList.remove('hidden');
+            } else {
+                headerActions.innerHTML = `
+                    <span class="text-xs text-slate-300">مرحباً، <b>${currentUser.name}</b></span>
+                    <button onclick="logout()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg text-xs transition">خروج</button>
+                `;
+
+                if (currentUser.isAdmin) {
+                    adminScreen.classList.remove('hidden');
+                    renderAdminPayouts();
+                } else {
+                    userScreen.classList.remove('hidden', 'grid-cols-1');
+                    userScreen.classList.add('grid');
+                    document.getElementById('user-balance').textContent = '$' + currentUser.balance.toFixed(2);
+                    renderTransactions();
+                }
+            }
+        }
+
+        function renderTransactions() {
+            const list = document.getElementById('user-transactions');
+            list.innerHTML = '';
+            if (!currentUser.transactions || currentUser.transactions.length === 0) {
+                list.innerHTML = '<p class="text-xs text-slate-500 text-center py-4">لا توجد معاملات بعد</p>';
+                return;
+            }
+            currentUser.transactions.slice().reverse().forEach(tx => {
+                const isIn = tx.type === 'in';
+                list.innerHTML += `
+                    <div class="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-3.5 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-xl ${isIn ? 'bg-green-500/10 text-green-400' : 'bg-blue-500/10 text-blue-400'} flex items-center justify-center">
+                                <i class="fa-solid ${isIn ? 'fa-arrow-down' : 'fa-brands fa-paypal'}"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-white">${tx.title}</p>
+                                <p class="text-[11px] text-slate-400">${tx.date}</p>
+                            </div>
+                        </div>
+                        <span class="${isIn ? 'text-green-400' : 'text-slate-300'} font-bold text-sm">${isIn ? '+' : '-'}$${tx.amount.toFixed(2)}</span>
+                    </div>
+                `;
+            });
+        }
+
+        function openDepositModal() { document.getElementById('deposit-modal').classList.remove('hidden'); }
+        function closeDepositModal() { document.getElementById('deposit-modal').classList.add('hidden'); }
+
+        function confirmDeposit() {
+            const val = parseFloat(document.getElementById('deposit-amount').value);
+            if (isNaN(val) || val <= 0) return alert('أدخل مبلغاً صحيحاً');
+
+            currentUser.balance += val;
+            currentUser.transactions.push({ title: 'إيداع رصيد تجريبي', amount: val, type: 'in', date: 'الآن' });
+            updateUserInDB();
+            closeDepositModal();
+            renderApp();
+            alert('تم الإيداع بنجاح!');
+        }
+
+        function handleWithdraw(event) {
+            event.preventDefault();
+            const amount = parseFloat(document.getElementById('withdraw-amount').value);
+            const paypalEmail = document.getElementById('user-paypal-email').value;
+
+            if (amount <= 0 || amount > currentUser.balance) {
+                alert('المبلغ غير صالح أو يتجاوز رصيدك!');
+                return;
+            }
+
+            currentUser.balance -= amount;
+            currentUser.transactions.push({ title: `طلب سحب إلى PayPal (${paypalEmail})`, amount: amount, type: 'out', date: 'الآن' });
+
+            // Save payout request for Admin (Salh)
+            let db = getDB();
+            db.payouts.push({ id: Date.now(), userName: currentUser.name, paypalEmail: paypalEmail, amount: amount, status: 'قيد المعالجة' });
+            saveDB(db);
+
+            updateUserInDB();
+            renderApp();
+            document.getElementById('withdraw-amount').value = '';
+            alert('تم تقديم طلب السحب بنجاح وسيتم تحويله إلى إيميل بايبال الخاص بك قريباً!');
+        }
+
+        function updateUserInDB() {
+            let db = getDB();
+            const index = db.users.findIndex(u => u.email === currentUser.email);
+            if (index !== -1) {
+                db.users[index] = currentUser;
+                saveDB(db);
+            }
+        }
+
+        function renderAdminPayouts() {
+            let db = getDB();
+            const tbody = document.getElementById('admin-payouts-list');
+            tbody.innerHTML = '';
+            if (db.payouts.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">لا توجد طلبات سحب معلقة حالياً</td></tr>`;
+                return;
+            }
+            db.payouts.forEach((p, idx) => {
+                tbody.innerHTML += `
+                    <tr class="border-b border-slate-800/60 hover:bg-slate-950/40">
+                        <td class="p-3 font-medium text-white">${p.userName}</td>
+                        <td class="p-3 text-green-400 font-mono select-all">${p.paypalEmail}</td>
+                        <td class="p-3 font-bold text-white">$${p.amount.toFixed(2)}</td>
+                        <td class="p-3"><span class="bg-amber-500/10 text-amber-400 px-2 py-1 rounded text-xs">${p.status}</span></td>
+                        <td class="p-3">
+                            <button onclick="completePayout(${idx})" class="bg-green-600 hover:bg-green-500 text-white px-3 py-1 rounded-lg text-xs transition">تم التحويل</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function completePayout(idx) {
+            let db = getDB();
+            db.payouts.splice(idx, 1);
+            saveDB(db);
+            renderAdminPayouts();
+            alert('تم تأكيد إتمام التحويل بنجاح!');
+        }
+    </script>
+</body>
+</html>
