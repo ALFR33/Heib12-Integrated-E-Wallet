@@ -7,10 +7,13 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Firebase SDK (Google Cloud Database) -->
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <!-- PayPal SDK الحقيقي (استبدل client-id بمعرف حسابك التجاري في بايبال) -->
+    <script src="https://www.paypal.com/sdk/js?client-id=YOUR_PAYPAL_CLIENT_ID&currency=USD"></script>
 </head>
 <body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col">
 
@@ -36,7 +39,7 @@
     <!-- Main Container -->
     <main class="flex-grow max-w-7xl mx-auto w-full px-4 py-8">
         
-        <!-- 1. AUTH SCREEN (Login / Register) -->
+        <!-- 1. AUTH SCREEN -->
         <div id="auth-card" class="max-w-md mx-auto bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl my-8">
             <h2 id="auth-title" class="text-2xl font-bold text-white text-center mb-2">تسجيل الدخول إلى محفظتك</h2>
             <p class="text-xs text-slate-400 text-center mb-6">أدخل بياناتك لإدارة رصيدك على السحابة</p>
@@ -62,15 +65,29 @@
             </div>
         </div>
 
-        <!-- 2. WALLET DASHBOARD (Hidden until login) -->
+        <!-- 2. USER WALLET DASHBOARD -->
         <div id="wallet-card" class="hidden max-w-2xl mx-auto space-y-6">
-            <!-- Balance Card -->
             <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800 p-6 md:p-8 shadow-2xl">
                 <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">رصيدك المتاح على السحابة</p>
                 <h2 id="wallet-balance" class="text-4xl md:text-5xl font-extrabold text-white mt-2 tracking-tight">$0.00</h2>
             </div>
 
-            <!-- Withdraw to PayPal Section -->
+            <!-- شحن الرصيد الحقيقي عبر PayPal Smart Buttons -->
+            <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-xl space-y-4">
+                <h3 class="font-bold text-white text-lg">شحن الرصيد حقيقي (إيداع فوري)</h3>
+                <p class="text-xs text-slate-400">اختر المبلغ المراد إضافته لمحفظتك عبر بوابات الدفع:</p>
+                
+                <div class="flex gap-3 mb-4">
+                    <button onclick="setDepositAmount(10)" class="deposit-btn flex-1 bg-slate-800 border border-slate-700 hover:border-green-500 py-2.5 rounded-xl text-sm font-bold text-white transition">10$</button>
+                    <button onclick="setDepositAmount(50)" class="deposit-btn flex-1 bg-slate-800 border border-slate-700 hover:border-green-500 py-2.5 rounded-xl text-sm font-bold text-white transition">50$</button>
+                    <button onclick="setDepositAmount(100)" class="deposit-btn flex-1 bg-slate-800 border border-slate-700 hover:border-green-500 py-2.5 rounded-xl text-sm font-bold text-white transition">100$</button>
+                </div>
+                
+                <!-- مكان ظهور زر بايبال الحقيقي -->
+                <div id="paypal-button-container"></div>
+            </div>
+
+            <!-- سحب الأرباح الحقيقي -->
             <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-xl">
                 <div class="flex items-center gap-3 mb-6">
                     <div class="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
@@ -100,11 +117,38 @@
             </div>
         </div>
 
+        <!-- 3. SECRET ADMIN DASHBOARD -->
+        <div id="admin-card" class="hidden max-w-4xl mx-auto space-y-6">
+            <div class="bg-slate-900 border border-amber-500/30 rounded-3xl p-6 md:p-8 shadow-xl">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <span class="text-xs bg-amber-500/10 text-amber-400 px-3 py-1 rounded-full border border-amber-500/20">لوحة الإدارة السرية (خاصة بك)</span>
+                        <h2 class="text-2xl font-bold text-white mt-2">طلبات السحب المعلقة من المستخدمين</h2>
+                    </div>
+                    <span class="text-xs text-slate-400">مراقبة إيميلات بايبال والمبالغ</span>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-right text-sm">
+                        <thead class="bg-slate-950 text-slate-400 uppercase text-xs border-b border-slate-800">
+                            <tr>
+                                <th class="p-3">إيميل المستخدم</th>
+                                <th class="p-3">بريد PayPal الخاص به</th>
+                                <th class="p-3">المبلغ المطلوب</th>
+                                <th class="p-3">الحالة</th>
+                                <th class="p-3">إجراء</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-payouts-list" class="divide-y divide-slate-800"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <!-- Firebase & App Script -->
     <script>
-        // إعدادات مشروعك الحقيقي في Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyA3S-Y7dYy_aWJccMJiHfUJkl54vwi6Cis",
             authDomain: "heib12-wallet.firebaseapp.com",
@@ -119,8 +163,15 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
+        const ADMIN_EMAIL = "aalhee34@gmail.com"; 
         let isRegister = false;
         let currentUserId = null;
+        let selectedDepositAmount = 10; // القيمة الافتراضية للإيداع
+
+        function setDepositAmount(amount) {
+            selectedDepositAmount = amount;
+            alert('تم اختيار مبلغ الإيداع: $' + amount);
+        }
 
         function toggleMode() {
             isRegister = !isRegister;
@@ -138,10 +189,9 @@
                 let userCred;
                 if (isRegister) {
                     userCred = await auth.createUserWithEmailAndPassword(email, pass);
-                    // إنشاء محفظة أولية للمستخدم في قاعدة بيانات السحابة Firestore
                     await db.collection('wallets').doc(userCred.user.uid).set({
                         email: email,
-                        balance: 50.00, // مكافأة ترحيبية تجريبية
+                        balance: 0.00,
                         createdAt: new Date()
                     });
                     alert('تم إنشاء الحساب والمحفظة بنجاح!');
@@ -149,3 +199,146 @@
                     userCred = await auth.signInWithEmailAndPassword(email, pass);
                 }
             } catch (err) {
+                alert('خطأ: ' + err.message);
+            }
+        }
+
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                currentUserId = user.uid;
+                document.getElementById('auth-card').classList.add('hidden');
+                document.getElementById('user-info-header').classList.remove('hidden');
+                document.getElementById('user-email-display').textContent = user.email;
+
+                if (user.email === ADMIN_EMAIL) {
+                    document.getElementById('wallet-card').classList.add('hidden');
+                    document.getElementById('admin-card').classList.remove('hidden');
+                    loadAdminPayouts();
+                } else {
+                    document.getElementById('admin-card').classList.add('hidden');
+                    document.getElementById('wallet-card').classList.remove('hidden');
+                    loadWalletData(user.uid);
+                    renderPayPalButton(); // تفعيل زر بايبال الحقيقي للإيداع
+                }
+            } else {
+                currentUserId = null;
+                document.getElementById('auth-card').classList.remove('hidden');
+                document.getElementById('wallet-card').classList.add('hidden');
+                document.getElementById('admin-card').classList.add('hidden');
+                document.getElementById('user-info-header').classList.add('hidden');
+            }
+        });
+
+        async function loadWalletData(uid) {
+            const doc = await db.collection('wallets').doc(uid).get();
+            if (doc.exists) {
+                const data = doc.data();
+                document.getElementById('wallet-balance').textContent = '$' + (data.balance || 0).toFixed(2);
+            }
+        }
+
+        // تفعيل زر الدفع الحقيقي عبر PayPal SDK
+        function renderPayPalButton() {
+            const container = document.getElementById('paypal-button-container');
+            container.innerHTML = ''; // تنظيف الزر القديم إن وجد
+            
+            paypal.Buttons({
+                createOrder: function(data, actions) {
+                    return actions.order.create({
+                        purchase_units: [{
+                            amount: { value: selectedDepositAmount.toString() }
+                        }]
+                    });
+                },
+                onApprove: async function(data, actions) {
+                    return actions.order.capture().then(async function(details) {
+                        // عملية الدفع نجحت حقيقياً في بايبال! الآن نحدث رصيد المستخدم في Firebase
+                        const walletRef = db.collection('wallets').doc(currentUserId);
+                        const doc = await walletRef.get();
+                        const currentBalance = doc.data().balance || 0;
+                        
+                        const newBalance = currentBalance + selectedDepositAmount;
+                        await walletRef.update({ balance: newBalance });
+
+                        alert('تم إيداع مبلغ $' + selectedDepositAmount + ' بنجاح إلى محفظتك!');
+                        loadWalletData(currentUserId);
+                    });
+                }
+            }).render('#paypal-button-container');
+        }
+
+        async function requestWithdraw(event) {
+            event.preventDefault();
+            const paypalEmail = document.getElementById('paypal-input').value;
+            const amount = parseFloat(document.getElementById('withdraw-amount').value);
+
+            if (!currentUserId) return;
+
+            const doc = await db.collection('wallets').doc(currentUserId).get();
+            const currentBalance = doc.data().balance || 0;
+
+            if (amount > currentBalance) {
+                alert('عذراً، رصيدك الحالي لا يكفي لإتمام هذا السحب.');
+                return;
+            }
+
+            await db.collection('wallets').doc(currentUserId).update({
+                balance: currentBalance - amount
+            });
+
+            const userDoc = await db.collection('wallets').doc(currentUserId).get();
+            await db.collection('payoutRequests').add({
+                userEmail: userDoc.data().email,
+                paypalEmail: paypalEmail,
+                amount: amount,
+                status: 'قيد المعالجة',
+                date: new Date()
+            });
+
+            alert('تم تقديم طلب السحب بنجاح وسيتجه إلى حسابك في بايبال قريباً!');
+            document.getElementById('withdraw-amount').value = '';
+            document.getElementById('paypal-input').value = '';
+            loadWalletData(currentUserId);
+        }
+
+        async function loadAdminPayouts() {
+            const tbody = document.getElementById('admin-payouts-list');
+            tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">جاري تحميل الطلبات...</td></tr>`;
+            
+            const snapshot = await db.collection('payoutRequests').get();
+            tbody.innerHTML = '';
+            
+            if (snapshot.empty) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">لا توجد طلبات سحب معلقة حالياً</td></tr>`;
+                return;
+            }
+
+            snapshot.forEach(docSnap => {
+                const p = docSnap.data();
+                const docId = docSnap.id;
+                tbody.innerHTML += `
+                    <tr class="border-b border-slate-800/60 hover:bg-slate-950/40">
+                        <td class="p-3 font-medium text-white">${p.userEmail}</td>
+                        <td class="p-3 text-green-400 font-mono select-all">${p.paypalEmail}</td>
+                        <td class="p-3 font-bold text-white">$${p.amount.toFixed(2)}</td>
+                        <td class="p-3"><span class="bg-amber-500/10 text-amber-400 px-2 py-1 rounded text-xs">${p.status}</span></td>
+                        <td class="p-3">
+                            <button onclick="completePayout('${docId}')" class="bg-green-600 hover:bg-green-500 text-white px-3 py-1 rounded-lg text-xs transition">تم التحويل</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        async function completePayout(docId) {
+            await db.collection('payoutRequests').doc(docId).delete();
+            alert('تم تأكيد إتمام التحويل وحذف الطلب من القائمة!');
+            loadAdminPayouts();
+        }
+
+        function logout() {
+            auth.signOut();
+        }
+    </script>
+</body>
+</html>
