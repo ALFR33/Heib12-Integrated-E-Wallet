@@ -14,9 +14,13 @@ app.use(express.static('public'));
 mongoose.connect('mongodb+srv://your_real_db_connection_string', {
     useNewUrlParser: true,
     useUnifiedTopology: true
-}).then(() => console.log('✅ تم الاتصال بقاعدة بيانات Heib12 السحابية بنجاح')).catch(err => console.log(err));
+}).then(() => {
+    console.log('✅ تم الاتصال بقاعدة بيانات Heib12 السحابية بنجاح');
+}).catch(err => {
+    console.log('❌ خطأ في الاتصال بقاعدة البيانات:', err);
+});
 
-// 2. تصميم هيكل المستخدم (User Schema)
+// 2. تصميم مخطط المستخدم (User Schema)
 const userSchema = new mongoose.Schema({
     name: String,
     email: { type: String, unique: true },
@@ -53,7 +57,7 @@ app.post('/api/deposit', async (req, res) => {
     }
 });
 
-// 4. مسار سحب الأرباح الحقيقي إلى PayPal (PayPal Payouts API Integration)
+// 4. مسار السحب الحقيقي إلى PayPal (PayPal Payouts API Integration)
 app.post('/api/withdraw', async (req, res) => {
     const { email, paypalEmail, amount } = req.body;
     try {
@@ -64,24 +68,30 @@ app.post('/api/withdraw', async (req, res) => {
             return res.status(400).json({ error: 'رصيدك غير كافٍ لإتمام السحب' });
         }
 
-        // خصم المبلغ من رصيد المستخدم محلياً في قاعدة البيانات
+        // خصم المبلغ من رصيد المستخدم في قاعدة البيانات
         user.balance -= parseFloat(amount);
         user.transactions.push({
-            title: `سحب أرباح إلى PayPal (${paypalEmail})`,
+            title: `سحب الأرباح إلى PayPal (${paypalEmail})`,
             amount: parseFloat(amount),
             type: 'out',
             status: 'Pending'
         });
         await user.save();
 
-        // هنا يتم استدعاء PayPal Payouts REST API لتحويل الأموال تلقائياً إلى إيميل المستخدم
+        // ملاحظة: هنا يتم ربط PayPal Payouts REST API مستقبلاً لتحويل الأموال آلياً
         // const payoutResponse = await sendPayPalPayout(paypalEmail, amount);
 
-        res.json({ success: true, message: 'تم تقديم طلب السحب ومعالجته عبر بوابة بايبال بنجاح', newBalance: user.balance });
+        res.json({ 
+            success: true, 
+            message: 'تم تقديم طلب السحب ومعالجته عبر بوابة بايبال بنجاح', 
+            newBalance: user.balance 
+        });
     } catch (err) {
         res.status(500).json({ error: 'خطأ في عملية التحويل' });
     }
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 خادم محفظة Heib12 يعمل بكامل طاقتة على المنفذ ${PORT}`));
+app.listen(PORT, () => {
+    console.log(`🚀 خادم محفظة Heib12 يعمل بكامل طاقته على المنفذ ${PORT}`);
+});
