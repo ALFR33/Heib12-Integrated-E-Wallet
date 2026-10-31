@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>محفظة Heib12 الرقمية</title>
+    <title>محفظة Heib12 الرقمية الحقيقية</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -52,4 +52,100 @@
                     <input type="password" id="auth-password" placeholder="••••••••" required
                         class="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-white text-sm focus:outline-none focus:border-green-500">
                 </div>
-                <button type="
+                <button type="submit" id="auth-btn" class="w-full bg-green-500 hover:bg-green-600 text-slate-950 font-bold py-3.5 rounded-xl transition shadow-lg shadow-green-500/20 text-sm">
+                    تسجيل الدخول
+                </button>
+            </form>
+
+            <div class="mt-6 text-center">
+                <button onclick="toggleMode()" id="toggle-btn" class="text-xs text-slate-400 hover:text-green-400 transition">ليس لديك حساب؟ أنشئ حساباً جديداً</button>
+            </div>
+        </div>
+
+        <!-- 2. WALLET DASHBOARD (Hidden until login) -->
+        <div id="wallet-card" class="hidden max-w-2xl mx-auto space-y-6">
+            <!-- Balance Card -->
+            <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800 p-6 md:p-8 shadow-2xl">
+                <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">رصيدك المتاح على السحابة</p>
+                <h2 id="wallet-balance" class="text-4xl md:text-5xl font-extrabold text-white mt-2 tracking-tight">$0.00</h2>
+            </div>
+
+            <!-- Withdraw to PayPal Section -->
+            <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-xl">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                        <i class="fa-brands fa-paypal text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-white text-lg">طلب سحب الأرباح إلى PayPal</h3>
+                        <p class="text-xs text-slate-400">أدخل بريد بايبال الخاص بك لتحويل الأرباح إليه</p>
+                    </div>
+                </div>
+
+                <form onsubmit="requestWithdraw(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1.5">بريد PayPal الخاص بك</label>
+                        <input type="email" id="paypal-input" placeholder="your-paypal@email.com" required
+                            class="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-white text-sm focus:outline-none focus:border-green-500 font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1.5">المبلغ المراد سحبه ($)</label>
+                        <input type="number" id="withdraw-amount" placeholder="0.00" min="1" step="0.01" required
+                            class="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-white text-sm focus:outline-none focus:border-green-500">
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 rounded-xl transition shadow-lg shadow-blue-600/20 text-sm">
+                        <i class="fa-solid fa-paper-plane ml-1"></i> إرسال طلب السحب الفوري
+                    </button>
+                </form>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Firebase & App Script -->
+    <script>
+        // إعدادات مشروعك الحقيقي في Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyA3S-Y7dYy_aWJccMJiHfUJkl54vwi6Cis",
+            authDomain: "heib12-wallet.firebaseapp.com",
+            projectId: "heib12-wallet",
+            storageBucket: "heib12-wallet.firebasestorage.app",
+            messagingSenderId: "1014785179712",
+            appId: "1:1014785179712:web:c7d881672839328ce01fa5",
+            measurementId: "G-7XPEBFRV0C"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        let isRegister = false;
+        let currentUserId = null;
+
+        function toggleMode() {
+            isRegister = !isRegister;
+            document.getElementById('auth-title').textContent = isRegister ? 'إنشاء حساب جديد في Heib12' : 'تسجيل الدخول إلى محفظتك';
+            document.getElementById('auth-btn').textContent = isRegister ? 'تسجيل وحفظ الحساب' : 'تسجيل الدخول';
+            document.getElementById('toggle-btn').textContent = isRegister ? 'لديك حساب؟ سجل دخولك' : 'ليس لديك حساب؟ أنشئ حساباً جديداً';
+        }
+
+        async function handleAuth(event) {
+            event.preventDefault();
+            const email = document.getElementById('auth-email').value;
+            const pass = document.getElementById('auth-password').value;
+
+            try {
+                let userCred;
+                if (isRegister) {
+                    userCred = await auth.createUserWithEmailAndPassword(email, pass);
+                    // إنشاء محفظة أولية للمستخدم في قاعدة بيانات السحابة Firestore
+                    await db.collection('wallets').doc(userCred.user.uid).set({
+                        email: email,
+                        balance: 50.00, // مكافأة ترحيبية تجريبية
+                        createdAt: new Date()
+                    });
+                    alert('تم إنشاء الحساب والمحفظة بنجاح!');
+                } else {
+                    userCred = await auth.signInWithEmailAndPassword(email, pass);
+                }
+            } catch (err) {
